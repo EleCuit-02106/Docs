@@ -1,0 +1,174 @@
+@startuml ElSchema
+
+namespace HUD {
+    class HUD <<View>>
+    HUD --> Inventory.IReadOnlyPartInventory
+    HUD --> Inventory.IReadOnlyCircuitInventory
+    HUD --> Inventory.IReadOnlyScoreInventory
+}
+
+namespace Inventory {
+    ' 所持している電気回路部品の個数を管理する
+    class PartInventory
+    interface IReadOnlyPartInventory
+    interface IPartInventoryInitializer
+    IReadOnlyPartInventory <|.. PartInventory
+    PartInventory ..|> IPartInventoryInitializer
+    ' 所持している導線の長さを管理する
+    class CircuitInventory
+    interface IReadOnlyCircuitInventory
+    interface ICircuitInventoryInitializer
+    IReadOnlyCircuitInventory <|.. CircuitInventory
+    CircuitInventory ..|> ICircuitInventoryInitializer
+    ' 所持しているスコアを管理する
+    class ScoreInventory
+    interface IReadOnlyScoreInventory
+    IReadOnlyScoreInventory <|.. ScoreInventory
+}
+
+namespace Course {
+    ' コースそのもの
+    class Course
+    ' コース情報を更新する
+    interface ICourseUpdater
+    ICourseUpdater <|.. Course
+    Course --> Renderer.IPartRenderer
+    Course --> Renderer.ICircuitRenderer
+
+    class CourseFactory<<static>>
+    CourseFactory .left> Course
+
+    ' 電気回路部品の設置可否を判断する
+    class PartSetupAccepter
+    ' 電気回路部品の設置承認依頼を受け付ける
+    interface IPartSetupApprovalRequest
+    IPartSetupApprovalRequest <|.. PartSetupAccepter
+    PartSetupAccepter ---> Renderer.IPartAcceptSignRenderer
+    PartSetupAccepter --> ICourseUpdater
+
+    ' 導線の設置可否を判断する
+    class CircuitSetupAccepter
+    ' 導線の設置承認依頼を受け付ける
+    interface ICircuitSetupApprovalRequest
+    ICircuitSetupApprovalRequest <|.. CircuitSetupAccepter
+    CircuitSetupAccepter --> ICourseUpdater
+}
+
+namespace Deserialize {
+    ' コースデータを読み込んで解釈する
+    class CourseDeserializer
+    Inventory.ICircuitInventoryInitializer <-- CourseDeserializer
+    Inventory.IPartInventoryInitializer <-- CourseDeserializer
+    Course.CourseFactory <-- CourseDeserializer
+}
+
+namespace UserCommand {
+    ' ユーザーが部品をドラッグしていることを検知する
+    class PartDragCommandDetector
+    PartDragCommandDetector ---> Input.IRxPartDraggingDetector
+    PartDragCommandDetector --> Inventory.IReadOnlyPartInventory
+    PartDragCommandDetector --> Renderer.IPartDraggingRenderer
+    PartDragCommandDetector --> Course.IPartSetupApprovalRequest
+
+    ' ユーザーが導線を描画していることを検知する
+    class CircuitDrawingCommandDetector
+    CircuitDrawingCommandDetector ---> Input.IRxCircuitDrawingDetector
+    CircuitDrawingCommandDetector --> Inventory.IReadOnlyCircuitInventory
+    CircuitDrawingCommandDetector --> Course.ICircuitSetupApprovalRequest
+}
+
+' 電気回路図の部品
+namespace Parts {
+    interface IPart {
+        +Affect() : void
+    }
+    ' 電気が到達するとスコアに影響を与える
+    interface IScorePart{
+
+    }
+    ' 電気が到達すると電圧に影響を与える
+    interface IVoltagePart {
+
+    }
+
+    IPart <|.. IScorePart
+    IPart <|.. IVoltagePart
+
+    ' 抵抗
+    class Resistance
+    ' 電球
+    class LightBulb
+
+    IVoltagePart <|.. Resistance
+    IScorePart <|.. LightBulb
+}
+
+namespace Electric {
+    ' 電気の先頭
+    class ElectricNode
+    interface IElectricNode
+    IElectricNode <|.. ElectricNode
+    ' 電気が進む先を決定する
+    class ElectricNavigator
+    IElectricNode <- ElectricNavigator
+    ' 電気が何らかの部品に到達したことを検知する
+    class PartDetector
+    ' 画面上に存在する電気ノードを保持する
+    class ElectricNodeStorage
+    interface IRxElectricNodePositions
+    IRxElectricNodePositions <|.. ElectricNodeStorage
+    ElectricNodeStorage "1" o-- "*" IElectricNode
+
+    ElectricNode --> Renderer.IElectricPassRenderer
+    PartDetector ---> Parts.IPart
+}
+
+namespace Camera {
+    class Camerawork
+    Camerawork --> Electric.IRxElectricNodePositions
+}
+
+namespace Input {
+    ' タッチ入力を検知する
+    interface IRxTouchDetector
+    class TouchDetector 
+    IRxTouchDetector <|.. TouchDetector
+
+    ' 導線を描画していることを検知する
+    interface IRxCircuitDrawingDetector
+    class CircuitDrawingDetector
+    IRxCircuitDrawingDetector <|.. CircuitDrawingDetector
+    ' 電気回路部品を配置するためにドラッグしていることを検知する
+    interface IRxPartDraggingDetector 
+    class PartDraggingDetector
+    IRxPartDraggingDetector <|.. PartDraggingDetector
+
+    CircuitDrawingDetector --> IRxTouchDetector
+    PartDraggingDetector --> IRxTouchDetector
+}
+
+
+namespace Renderer {
+    ' 導線のレンダラー
+    class CircuitRenderer
+    interface ICircuitRenderer
+    ICircuitRenderer <|.. CircuitRenderer
+    ' 電気回路部品のレンダラー
+    class PartRenderer
+    interface IPartRenderer
+    IPartRenderer <|.. PartRenderer
+    ' 電気の軌跡のレンダラー
+    class ElectricPassRenderer
+    interface IElectricPassRenderer
+    IElectricPassRenderer <|.. ElectricPassRenderer
+    ' 部品配置プレビューサインのレンダラー
+    class PartAcceptSignRenderer
+    interface IPartAcceptSignRenderer
+    IPartAcceptSignRenderer <|.. PartAcceptSignRenderer
+    ' ドラッグ中の軌跡を描画するレンダラー
+    class PartDraggingRenderer
+    interface IPartDraggingRenderer
+    IPartDraggingRenderer <|.. PartDraggingRenderer
+}
+
+@enduml
