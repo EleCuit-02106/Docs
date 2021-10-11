@@ -31,27 +31,30 @@ namespace Course {
     class Course
     ' コース情報を更新する
     interface ICourseUpdater
+    ' コースの構造（どこに何があるかなど）の変化を配信する
+    interface IRxCourseStructure
     ICourseUpdater <|.. Course
-    Course --> Renderer.IPartRenderer
-    Course --> Renderer.ICircuitRenderer
+    IRxCourseStructure <|. Course
 
     class CourseFactory<<static>>
     CourseFactory .left> Course
 
     ' 電気回路部品の設置可否を判断する
-    class PartSetupAccepter
+    class PartSetupAcceptor
     ' 電気回路部品の設置承認依頼を受け付ける
     interface IPartSetupApprovalRequest
-    IPartSetupApprovalRequest <|.. PartSetupAccepter
-    PartSetupAccepter ---> Renderer.IPartAcceptSignRenderer
-    PartSetupAccepter --> ICourseUpdater
+    ' 受け付けた部品配置承認依頼の承認・否認を配信する
+    interface IRxPartSetupAcceptOrDeny
+    IPartSetupApprovalRequest <|.. PartSetupAcceptor
+    PartSetupAcceptor ..|> IRxPartSetupAcceptOrDeny
+    PartSetupAcceptor --> ICourseUpdater
 
     ' 導線の設置可否を判断する
-    class CircuitSetupAccepter
+    class CircuitSetupAcceptor
     ' 導線の設置承認依頼を受け付ける
     interface ICircuitSetupApprovalRequest
-    ICircuitSetupApprovalRequest <|.. CircuitSetupAccepter
-    CircuitSetupAccepter --> ICourseUpdater
+    ICircuitSetupApprovalRequest <|.. CircuitSetupAcceptor
+    CircuitSetupAcceptor --> ICourseUpdater
 }
 
 namespace Deserialize {
@@ -65,16 +68,18 @@ namespace Deserialize {
 namespace UserCommand {
     ' ユーザーが部品をドラッグしていることを検知する
     class PartDragCommandDetector
+    ' ユーザーが部品をドラッグしていることを配信する
+    interface IRxPartDragging
+    IRxPartDragging <|.. PartDragCommandDetector
     PartDragCommandDetector ---> Input.IRxPartDraggingDetector
-    PartDragCommandDetector --> Inventory.IReadOnlyPartInventory
-    PartDragCommandDetector --> Renderer.IPartDraggingRenderer
-    PartDragCommandDetector --> Course.IPartSetupApprovalRequest
+    PartDragCommandDetector ---> Inventory.IReadOnlyPartInventory
+    PartDragCommandDetector ---> Course.IPartSetupApprovalRequest
 
     ' ユーザーが導線を描画していることを検知する
     class CircuitDrawingCommandDetector
     CircuitDrawingCommandDetector ---> Input.IRxCircuitDrawingDetector
-    CircuitDrawingCommandDetector --> Inventory.IReadOnlyCircuitInventory
-    CircuitDrawingCommandDetector --> Course.ICircuitSetupApprovalRequest
+    CircuitDrawingCommandDetector ---> Inventory.IReadOnlyCircuitInventory
+    CircuitDrawingCommandDetector ---> Course.ICircuitSetupApprovalRequest
 }
 
 ' 電気回路図の部品
@@ -107,7 +112,9 @@ namespace Electric {
     ' 電気の先頭
     class ElectricNode
     interface IElectricNode
+    interface IRxElectricNodePosition
     IElectricNode <|.. ElectricNode
+    ElectricNode .|> IRxElectricNodePosition
     ' 電気が進む先を決定する
     class ElectricNavigator
     IElectricNode <- ElectricNavigator
@@ -119,7 +126,6 @@ namespace Electric {
     IRxElectricNodePositions <|.. ElectricNodeStorage
     ElectricNodeStorage "1" o-- "*" IElectricNode
 
-    ElectricNode --> Renderer.IElectricPassRenderer
     PartDetector ---> Parts.IPart
 }
 
@@ -149,26 +155,20 @@ namespace Input {
 
 
 namespace Renderer {
-    ' 導線のレンダラー
+    ' 導線と電気回路部品のレンダラー
     class CircuitRenderer
-    interface ICircuitRenderer
-    ICircuitRenderer <|.. CircuitRenderer
-    ' 電気回路部品のレンダラー
     class PartRenderer
-    interface IPartRenderer
-    IPartRenderer <|.. PartRenderer
+    Course.IRxCourseStructure <-- CircuitRenderer
+    Course.IRxCourseStructure <-- PartRenderer
     ' 電気の軌跡のレンダラー
     class ElectricPassRenderer
-    interface IElectricPassRenderer
-    IElectricPassRenderer <|.. ElectricPassRenderer
+    Electric.IRxElectricNodePosition <-- ElectricPassRenderer
     ' 部品配置プレビューサインのレンダラー
     class PartAcceptSignRenderer
-    interface IPartAcceptSignRenderer
-    IPartAcceptSignRenderer <|.. PartAcceptSignRenderer
+    Course.IRxPartSetupAcceptOrDeny <-- PartAcceptSignRenderer
     ' ドラッグ中の軌跡を描画するレンダラー
     class PartDraggingRenderer
-    interface IPartDraggingRenderer
-    IPartDraggingRenderer <|.. PartDraggingRenderer
+    UserCommand.IRxPartDragging <-- PartDraggingRenderer
 }
 
 @enduml
