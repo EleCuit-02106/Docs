@@ -74,13 +74,13 @@ namespace UserCommand {
     interface IRxPartDragCommandPublisher
     class PartDragCommandDetector
     PartDragCommandDetector ..|> IRxPartDragCommandPublisher
-    Input.IRxPartDraggingDetector <-- PartDragCommandDetector
+    Input.IRxPartDraggingInput <-- PartDragCommandDetector
 
     ' ユーザーが導線を描画していることを検知する
     interface IRxCircuitDrawingCommandPublisher
     class CircuitDrawingCommandDetector
     CircuitDrawingCommandDetector ..|> IRxCircuitDrawingCommandPublisher
-    Input.IRxCircuitDrawingDetector <-- CircuitDrawingCommandDetector
+    Input.IRxCircuitDrawingInput <-- CircuitDrawingCommandDetector
 }
 
 ' 電気回路図の部品
@@ -137,21 +137,21 @@ namespace Camera {
 
 namespace Input {
     ' タッチ入力を検知する
-    interface IRxTouchDetector
+    interface IRxTouchInput
     class TouchDetector 
-    TouchDetector ..|> IRxTouchDetector
+    TouchDetector ..|> IRxTouchInput
 
     ' 導線を描画していることを検知する
-    interface IRxCircuitDrawingDetector
+    interface IRxCircuitDrawingInput
     class CircuitDrawingDetector
-    CircuitDrawingDetector ..|> IRxCircuitDrawingDetector
+    CircuitDrawingDetector ..|> IRxCircuitDrawingInput
     ' 電気回路部品を配置するためにドラッグしていることを検知する
-    interface IRxPartDraggingDetector 
+    interface IRxPartDraggingInput 
     class PartDraggingDetector
-    PartDraggingDetector ..|> IRxPartDraggingDetector
+    PartDraggingDetector ..|> IRxPartDraggingInput
 
-    IRxTouchDetector <-- CircuitDrawingDetector
-    IRxTouchDetector <-- PartDraggingDetector
+    IRxTouchInput <-- CircuitDrawingDetector
+    IRxTouchInput <-- PartDraggingDetector
 }
 
 
