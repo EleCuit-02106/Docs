@@ -1,29 +1,31 @@
 @startuml ElSchema
 
-namespace HUD {
+namespace UI {
     class HUD <<View>>
-    HUD --> Inventory.IReadOnlyPartInventory
-    HUD --> Inventory.IReadOnlyCircuitInventory
-    HUD --> Inventory.IReadOnlyScoreInventory
+    HUD --> Inventory.IRxCircuitInventory
+    HUD --> Inventory.IRxScoreInventory
+
+    class PartToolBox
+    PartToolBox --> Inventory.IRxPartInventory
 }
 
 namespace Inventory {
     ' 所持している電気回路部品の個数を管理する
     class PartInventory
-    interface IReadOnlyPartInventory
-    interface IPartInventoryInitializer
-    IReadOnlyPartInventory <|.. PartInventory
-    PartInventory ..|> IPartInventoryInitializer
+    interface IRxPartInventory
+    IRxPartInventory <|.. PartInventory
+    UserCommand.IRxPartDragCommandPublisher <-- PartInventory
     ' 所持している導線の長さを管理する
     class CircuitInventory
-    interface IReadOnlyCircuitInventory
+    interface IRxCircuitInventory
+    IRxCircuitInventory <|.. CircuitInventory
     interface ICircuitInventoryInitializer
-    IReadOnlyCircuitInventory <|.. CircuitInventory
     CircuitInventory ..|> ICircuitInventoryInitializer
+    UserCommand.IRxCircuitDrawingCommandPublisher <-- CircuitInventory
     ' 所持しているスコアを管理する
     class ScoreInventory
-    interface IReadOnlyScoreInventory
-    IReadOnlyScoreInventory <|.. ScoreInventory
+    interface IRxScoreInventory
+    IRxScoreInventory <|.. ScoreInventory
 }
 
 namespace Course {
@@ -41,19 +43,15 @@ namespace Course {
 
     ' 電気回路部品の設置可否を判断する
     class PartSetupAcceptor
-    ' 電気回路部品の設置承認依頼を受け付ける
-    interface IPartSetupApprovalRequest
+    UserCommand.IRxPartDragCommandPublisher <-- PartSetupAcceptor
     ' 受け付けた部品配置承認依頼の承認・否認を配信する
     interface IRxPartSetupAcceptOrDeny
-    IPartSetupApprovalRequest <|.. PartSetupAcceptor
     PartSetupAcceptor ..|> IRxPartSetupAcceptOrDeny
     PartSetupAcceptor --> ICourseUpdater
 
     ' 導線の設置可否を判断する
     class CircuitSetupAcceptor
-    ' 導線の設置承認依頼を受け付ける
-    interface ICircuitSetupApprovalRequest
-    ICircuitSetupApprovalRequest <|.. CircuitSetupAcceptor
+    UserCommand.IRxCircuitDrawingCommandPublisher <-- CircuitSetupAcceptor
     CircuitSetupAcceptor --> ICourseUpdater
 }
 
@@ -61,25 +59,28 @@ namespace Deserialize {
     ' コースデータを読み込んで解釈する
     class CourseDeserializer
     Inventory.ICircuitInventoryInitializer <-- CourseDeserializer
-    Inventory.IPartInventoryInitializer <-- CourseDeserializer
     Course.CourseFactory <-- CourseDeserializer
+}
+
+namespace Settings {
+    ' Partのマスターデータを設定する
+    class PartSettings<<singleton>>
+    interface IPartSettings
+    IPartSettings <|.. PartSettings
 }
 
 namespace UserCommand {
     ' ユーザーが部品をドラッグしていることを検知する
+    interface IRxPartDragCommandPublisher
     class PartDragCommandDetector
-    ' ユーザーが部品をドラッグしていることを配信する
-    interface IRxPartDragging
-    IRxPartDragging <|.. PartDragCommandDetector
+    PartDragCommandDetector ..|> IRxPartDragCommandPublisher
     PartDragCommandDetector ---> Input.IRxPartDraggingDetector
-    PartDragCommandDetector ---> Inventory.IReadOnlyPartInventory
-    PartDragCommandDetector ---> Course.IPartSetupApprovalRequest
 
     ' ユーザーが導線を描画していることを検知する
+    interface IRxCircuitDrawingCommandPublisher
     class CircuitDrawingCommandDetector
+    CircuitDrawingDetector ..|> IRxCircuitDrawingCommandPublisher
     CircuitDrawingCommandDetector ---> Input.IRxCircuitDrawingDetector
-    CircuitDrawingCommandDetector ---> Inventory.IReadOnlyCircuitInventory
-    CircuitDrawingCommandDetector ---> Course.ICircuitSetupApprovalRequest
 }
 
 ' 電気回路図の部品
@@ -168,7 +169,7 @@ namespace Renderer {
     Course.IRxPartSetupAcceptOrDeny <-- PartAcceptSignRenderer
     ' ドラッグ中の軌跡を描画するレンダラー
     class PartDraggingRenderer
-    UserCommand.IRxPartDragging <-- PartDraggingRenderer
+    UserCommand.IRxPartDragCommandPublisher <-- PartDraggingRenderer
 }
 
 @enduml
