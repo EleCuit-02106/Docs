@@ -79,7 +79,7 @@ namespace UserCommand {
     ' ユーザーが導線を描画していることを検知する
     interface IRxCircuitDrawingCommandPublisher
     class CircuitDrawingCommandDetector
-    CircuitDrawingDetector ..|> IRxCircuitDrawingCommandPublisher
+    CircuitDrawingCommandDetector ..|> IRxCircuitDrawingCommandPublisher
     Input.IRxCircuitDrawingDetector <-- CircuitDrawingCommandDetector
 }
 
