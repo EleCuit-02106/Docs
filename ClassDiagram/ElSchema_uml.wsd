@@ -31,11 +31,10 @@ namespace Inventory {
 namespace Course {
     ' コースそのもの
     class Course
-    ' コース情報を更新する
-    interface ICourseUpdater
+    interface ICourse
     ' コースの構造（どこに何があるかなど）の変化を配信する
     interface IRxCourseStructure
-    ICourseUpdater <|.. Course
+    ICourse <|.. Course
     IRxCourseStructure <|. Course
 
     class CourseFactory<<static>>
@@ -47,12 +46,12 @@ namespace Course {
     ' 受け付けた部品配置承認依頼の承認・否認を配信する
     interface IRxPartSetupAcceptOrDeny
     PartSetupAcceptor ..|> IRxPartSetupAcceptOrDeny
-    PartSetupAcceptor --> ICourseUpdater
+    PartSetupAcceptor --> ICourse
 
     ' 導線の設置可否を判断する
     class CircuitSetupAcceptor
     UserCommand.IRxCircuitDrawingCommandPublisher <-- CircuitSetupAcceptor
-    CircuitSetupAcceptor --> ICourseUpdater
+    CircuitSetupAcceptor --> ICourse
 }
 
 namespace Deserialize {
