@@ -31,11 +31,8 @@ namespace Inventory {
 namespace Course {
     ' コースそのもの
     class Course
-    interface ICourse
-    ' コースの構造（どこに何があるかなど）の変化を配信する
-    interface IRxCourseStructure
-    ICourse <|.. Course
-    IRxCourseStructure <|. Course
+    interface IReadOnlyCourse
+    IReadOnlyCourse <|.. Course
 
     class CourseFactory<<static>>
     CourseFactory .left> Course
@@ -46,12 +43,12 @@ namespace Course {
     ' 受け付けた部品配置承認依頼の承認・否認を配信する
     interface IRxPartSetupAcceptOrDeny
     PartSetupAcceptor ..|> IRxPartSetupAcceptOrDeny
-    PartSetupAcceptor --> ICourse
+    PartSetupAcceptor --> IReadOnlyCourse
 
     ' 導線の設置可否を判断する
     class CircuitSetupAcceptor
     UserCommand.IRxCircuitDrawingCommandPublisher <-- CircuitSetupAcceptor
-    CircuitSetupAcceptor --> ICourse
+    CircuitSetupAcceptor --> IReadOnlyCourse
 }
 
 namespace Deserialize {
@@ -144,10 +141,8 @@ namespace Input {
 
 namespace Renderer {
     ' 導線と電気回路部品のレンダラー
-    class CircuitRenderer
-    class PartRenderer
-    Course.IRxCourseStructure <-- CircuitRenderer
-    Course.IRxCourseStructure <-- PartRenderer
+    class CourseRenderer
+    Course.IReadOnlyCourse <-- CourseRenderer
     ' 電気の軌跡のレンダラー
     class ElectricPassRenderer
     Electric.IRxElectricNodePosition <-- ElectricPassRenderer
